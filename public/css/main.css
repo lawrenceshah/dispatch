@@ -1,0 +1,13 @@
+.main-container {
+  margin-top: 20%;
+  margin-top: 30vh;
+}
+
+.main-button {
+  margin: 1em auto;
+  width: 50%;
+}
+
+.logout-button {
+  margin-top: 1em;
+}

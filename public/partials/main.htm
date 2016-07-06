@@ -1,0 +1,26 @@
+<div class="main-container container text-center">
+  <h1>Dispatch App</h1>
+  <button class="main-button btn btn-primary" type="button" data-toggle="modal" data-target="#main-modal">Log In</button>
+</div>
+
+<div class="modal fade text-center" id="main-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <h2>Log In</h2>
+        <form ng-submit="submit()">
+          <div class="form-group">
+            <label for="main-username">User ID</label>
+            <input class="form-control" id="main-username" type="text" placeholder="Username" ng-model="username" />
+          </div>
+          <div class="form-group">
+            <label for="main-password">User ID</label>
+            <input class="form-control" id="main-password" type="password" placeholder="Password" ng-model="password" />
+          </div>
+          <button class="btn btn-primary" type="submit">Submit</button>
+          <button class="btn btn-default" type="button" data-dismiss="modal">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
