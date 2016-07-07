@@ -1,3 +1,11 @@
+var taskStatusDict = [
+  'Scheduled', // 0
+  'In Progress (In Session)', // 1
+  'In Progress (Not In Session)', // 2
+  'Completed (Pending)', // 3
+  'Completed', // 4
+];
+
 // Initialize Firebase
 var config = {
   apiKey: "AIzaSyBUpCFJyX81TjLNyKXoSWdetQYEIZs3lNc",
@@ -44,13 +52,45 @@ angular.module('dispatchApp', ['ngRoute'])
   
   return service;
 })
-.controller('appCtrl', function($scope, Page) {
+.controller('appCtrl', function($scope, Page, $window) {
   $scope.Page = Page;
-  $scope.user;
+  
+  // sign out
+  $scope.logout = function() {
+    firebase.auth().signOut()
+    .then(function(res) {
+      console.log(res);
+    }, function(error) {
+      console.log(error);
+    });
+  };
+  
+  $scope.refresh = function() {
+    $window.location.reload();
+  }
 })
 .controller('mainCtrl', function($scope, Page, $window, $http) {
-  Page.setTitle('Main');
-  $scope.user;
+  Page.setTitle('Dispatch');
+  
+  // check if user is signed in
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      // User is signed in.
+      firebase.database().ref('/users/'+user.uid).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+          // user data found
+          $window.location.href = '/'+snapshot.val().role+'/'+snapshot.val().userId;
+        } else {
+          // no user data found
+          console.log('nope');
+          firebase.auth().signOut();
+          $window.location.href = '/';
+        }
+      });
+    }
+    $scope.pageLoaded = true;
+    $scope.$apply();
+  });
   
   $('#main-modal').on('show.bs.modal', function(e) {
     $scope.username = null;
@@ -63,10 +103,13 @@ angular.module('dispatchApp', ['ngRoute'])
   });
   
   $scope.submit = function() {
+    $scope.pageLoaded = false;
     firebase.auth().signInWithEmailAndPassword($scope.username+'@fake.email',$scope.password)
     .catch(function(error) {
       console.log('error');
       console.log(error);
+      $scope.pageLoaded = true;
+      $scope.$apply();
     })
     .then(function(res) {
       console.log('success');
@@ -75,7 +118,7 @@ angular.module('dispatchApp', ['ngRoute'])
         firebase.database().ref('/users/'+res.uid).once('value')
         .then(function(snapshot) {
           console.log(snapshot.val());
-          $window.location.href = '/'+snapshot.val().role+'/'+snapshot.val().username;
+          $window.location.href = '/'+snapshot.val().role+'/'+snapshot.val().userId;
         });
       }
     })
@@ -83,12 +126,31 @@ angular.module('dispatchApp', ['ngRoute'])
 })
 .controller('managerCtrl', function($scope, $routeParams, Page, $window) {
   Page.setTitle('Manager');
+})
+.controller('technicianCtrl', function($scope, $routeParams, Page, $window) {
+  Page.setTitle('Technician');
+  $scope.taskStatusDict = taskStatusDict;
+  $scope.time = Date.now();
+  
+  // check if user is signed in
   firebase.auth().onAuthStateChanged(function(user) {
     if (user) {
       // User is signed in.
       firebase.database().ref('/users/'+user.uid).once('value').then(function(snapshot) {
-        $scope.user = snapshot.val();
-        $scope.getJobs();
+        if (snapshot.exists()) {
+          // user data found
+          $scope.user = snapshot.val();
+          Page.setTitle('Technician | '+$scope.user.name);
+          console.log($scope.user);
+          $scope.pageLoaded = true;
+          $scope.$apply();
+          $scope.getTasks();
+        } else {
+          // no user data found
+          console.log('nope');
+          firebase.auth().signOut();
+          $window.location.href = '/';
+        }
       });
     } else {
       // No user is signed in.
@@ -96,57 +158,91 @@ angular.module('dispatchApp', ['ngRoute'])
       $window.location.href = '/';
     }
   });
-      
-  $scope.logout = function() {
-    if (window.confirm('Log out?')) {
-      firebase.auth().signOut()
-      .then(function(res) {
-        console.log(res);
-      }, function(error) {
-        console.log(error);
-      })
-    }
-  };
   
-  $scope.getJobs = function() {
-    if ($scope.jobSearchFilter) {
-      // filtered results
-    } else {
-      // unfiltered results
-      firebase.database().ref('/jobs/').once('value').then(function(snapshot) {
-        $scope.jobs = snapshot.val();
-        for (var job in $scope.jobs) {
-          let j = job;
-          if ($scope.jobs[j].technicianId) {
-            firebase.database().ref('/users/'+$scope.jobs[j].technicianId).once('value').then(function(snapshot) {
-              $scope.jobs[j].technicianId = snapshot.val().userId;
-              $scope.$apply();
-            });
-          } else {
-            $scope.jobs[j].technicianId = 'Unassigned'
-          }
+  // get tasks from database
+  $scope.getTasks = function() {
+    $scope.pageLoaded = false;
+    // check filters
+    if (true) {
+      firebase.database().ref('/tasks').orderByChild('techId').equalTo($scope.user.userId).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+          $scope.tasks = snapshot.val();
+          $scope.tasksLoaded = true;
+          console.log($scope.tasks);
+        } else {
+          $scope.tasksLoaded = true;
         }
+        $scope.pageLoaded = true;
         $scope.$apply();
       });
     }
   };
   
-  $scope.jobDetailsFill = function(id) {
-    console.log(id);
-    firebase.database().ref('/jobs/'+id).once('value').then(function(snapshot) {
-      $scope.jobDetailsJob = snapshot.val();
-      if ($scope.jobDetailsJob.technicianId) {
-        firebase.database().ref('/users/'+$scope.jobDetailsJob.technicianId).once('value').then(function(snapshot) {
-          $scope.jobDetailsJob.technicianId = snapshot.val().userId;
-          $scope.$apply();
-        });
-      } else {
-        $scope.jobDetailsJob.technicianId = 'Unassigned';
-        $scope.$apply();
-      }
+  $scope.applyTaskFilter = function() {
+    
+  };
+  
+  // fills task details modal
+  $scope.fillTaskDetails = function(id) {
+    firebase.database().ref('/tasks').orderByChild('taskId').equalTo(id).once('value').then(function(snapshot) {
+      console.log(snapshot.val()[id]);
+      $scope.taskDetails = snapshot.val()[id];
+      $scope.$apply();
     });
   };
-})
-.controller('technicianCtrl', function($scope, $routeParams, Page) {
-  Page.setTitle('Technician');
+  
+  // start a new work session
+  $scope.startSession = function() {
+    var t = Date.now();
+    var id = $scope.taskDetails.taskId;
+    firebase.database().ref('/tasks/'+id+'/sessions').push({startTime:t,endTime:-1}, function() {
+      firebase.database().ref('/tasks/'+id+'/status').set(1);
+      $scope.fillTaskDetails($scope.taskDetails.taskId);
+      $scope.getTasks();
+    });
+  };
+  
+  // end the current work session
+  $scope.endSession = function() {
+    var t = Date.now();
+    var id = $scope.taskDetails.taskId;
+    firebase.database().ref('/tasks/'+id+'/sessions').orderByChild('endTime').equalTo(-1).once('value').then(function(snapshot) {
+      snapshot.forEach(function(child) {
+        firebase.database().ref('/tasks/'+id+'/sessions/'+child.key+'/endTime').set(t, function() {
+          firebase.database().ref('/tasks/'+id+'/status').set(2);
+          $scope.fillTaskDetails($scope.taskDetails.taskId);
+          $scope.getTasks();
+        });
+      });
+    });
+  };
+  
+  // report task as complete
+  $scope.taskComplete = function() {
+    var t = Date.now();
+    var id=$scope.taskDetails.taskId;
+    firebase.database().ref('/tasks/'+id+'/status').set(3, function() {
+      $scope.fillTaskDetails($scope.taskDetails.taskId);
+      $scope.getTasks();
+    });
+  };
+  
+  // reopen a pending task
+  $scope.taskReopen = function() {
+    var t = Date.now();
+    var id=$scope.taskDetails.taskId;
+    firebase.database().ref('/tasks/'+id+'/status').set(2, function() {
+      $scope.fillTaskDetails($scope.taskDetails.taskId);
+      $scope.getTasks();
+    });
+  };
+  
+  // add a note to the current task
+  $scope.addNoteSubmit = function() {
+    var t = Date.now();
+    var id = $scope.taskDetails.taskId;
+    firebase.database().ref('/tasks/'+id+'/notes').push({author:$scope.user.name+' (ID '+$scope.user.userId+')',time:t,content:$scope.addNoteContent}, function() {
+      $scope.fillTaskDetails($scope.taskDetails.taskId);
+    });
+  }
 });

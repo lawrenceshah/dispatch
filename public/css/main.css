@@ -1,13 +1,56 @@
+/* demo features */
+.demo-button {
+  bottom: 10px;
+  position: fixed;
+  right: 10px;
+}
+
+/* app */
+.loading-mask {
+  background-color: white;
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  text-align: center;
+  top: 0;
+  z-index: 10000;
+}
+
+.loading-mask-text {
+  position: absolute;
+  top: 40%;
+  width: 100%;
+}
+
 .main-container {
   margin-top: 20%;
-  margin-top: 30vh;
+  margin-top: 20vh;
 }
 
 .main-button {
-  margin: 1em auto;
+  margin: 2em auto;
   width: 50%;
 }
 
 .logout-button {
   margin-top: 1em;
+}
+
+.page-refresh-button {
+  float: right;
+  margin-top: 1em;
+}
+
+.tasks-table-field {
+  margin-bottom: 0.5em;
+}
+
+.task-details-refresh-button {
+  float: right;
+}
+
+.task-details-modal-field {
+  margin-bottom: 0.5em;
+  margin-left: 1em;
 }

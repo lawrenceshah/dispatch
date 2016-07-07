@@ -1,1 +1,127 @@
-technician.htm
+<div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADNG...</div></div>
+
+<div class="container">
+  <button class="logout-button btn btn-default" type="button" data-toggle="modal" data-target="#logout-modal">Log Out</button>
+  <button class="page-refresh-button btn btn-default" type="button" ng-click="refresh()">Refresh Page</button>
+  <h1>Technician View</h1>
+  <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
+  <h2>Tasks</h2>
+  <!-- task filter panel -->
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      Filter tasks by: (Coming Soon)
+    </div>
+    <div class="panel-body">
+      <button class="btn btn-default" type="button">Task ID</button>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" type="submit">Apply</button>
+      <button class="btn btn-default" type="button">Clear</button>
+    </div>
+  </div>
+  
+  <!-- tasks table -->
+  <table class="tasks-table table table-bordered table-striped">
+    <tbody ng-show="tasksLoaded">
+      <tr ng-repeat="task in tasks | orderBy:'taskId'" ng-class="{info: task.status==1||task.status==2,warning:task.status==3,success:task.status==4}">
+        <td>
+          <h4><strong>Task ID: {{task.taskId}}</strong></h4>
+          <div class="tasks-table-field"><strong>Status:</strong> {{taskStatusDict[task.status]}}</div>
+          <div class="tasks-table-field"><strong>Scheduled Date:</strong> {{task.scheduledDate | date:'[MM/dd/yyyy] h:mma'}}</div>
+          <div class="tasks-table-field"><strong>Customer Name:</strong> {{task.customer.name}}</div>
+          <div class="tasks-table-field"><strong>Description:</strong> {{task.description}}</div>
+          <div class="text-right"><button class="btn btn-primary" type="button" data-toggle="modal" data-target="#task-details-modal" ng-click="fillTaskDetails(task.taskId)">Task Details</button></div>
+        </td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr ng-hide="tasksLoaded">
+        <td class="text-center" colspan="4">LOADING TASKS...</td>
+      </tr>
+      <tr ng-hide="tasks">
+        <td class="text-center" colspan="4">There are currently no such tasks.</td>
+      </tr>
+    </tfoot>
+  </table>
+  
+  <h2>Statistics (Coming Soon)</h2>
+</div>
+
+<!-- task details modal -->
+<div class="modal fade" id="task-details-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <strong>Task Details for Task {{taskDetails.taskId}}</strong>
+        <button class="task-details-refresh-button btn btn-default" type="button" ng-click="fillTaskDetails(taskDetails.taskId)">Refresh Task</button>
+      </div>
+      <div class="modal-body">
+        <strong>Status</strong>
+        <div class="task-details-modal-field">{{taskStatusDict[taskDetails.status]}}</div>
+        <strong>Scheduled Date</strong>
+        <div class="task-details-modal-field">{{taskDetails.scheduledDate | date:'[MM/dd/yyyy] h:mma'}}</strong></div>
+        <strong>Customer Name</strong>
+        <div class="task-details-modal-field">{{taskDetails.customer.name}}</div>
+        <strong>Customer Phone</strong>
+        <div class="task-details-modal-field">{{taskDetails.customer.phone}}</div>
+        <strong>Customer Address</strong>
+        <div class="task-details-modal-field">{{taskDetails.customer.address}}</div>
+        <strong>Description</strong>
+        <div class="task-details-modal-field">{{taskDetails.description}}</div>
+        <strong>Sessions</strong>
+        <table class="table table-bordered table-striped">
+          <tr ng-repeat="session in taskDetails.sessions | orderBy:'startTime'">
+            <td>
+              <div><strong>Start Time:</strong> {{session.startTime | date:'[MM/dd/yyyy] h:mma'}}</div>
+              <div><strong>End Time:</strong> <span ng-show="session.endTime>0">{{session.endTime | date:'[MM/dd/yyyy] h:mma'}}</span><span ng-show="session.endTime==-1">In Progress</span></div>
+            </td>
+          </tr>
+          <tr ng-hide="taskDetails.sessions">
+            <td>There are no sessions on record.</td>
+          </tr>
+        </table>
+        <strong>Notes</strong>
+        <table class="table table-bordered table-striped">
+          <tr ng-repeat="note in taskDetails.notes | orderBy:'time'">
+            <td>
+              <div>{{note.content}}</div>
+              <div><strong>Added by {{note.author}}</strong></div>
+              <div><strong>At {{note.time | date:'[MM/dd] h:mma'}}</strong></div>
+            </td>
+          </tr>
+          <tr ng-hide="taskDetails.notes">
+            <td>There are no notes on record.</td>
+          </tr>
+        </table>
+        <textarea class="form-control" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em"></textarea>
+        <div class="text-right">
+          <button class="btn btn-primary" ng-hide="addNoteShow" ng-click="addNoteShow=true">Add New Note</button>
+          <button class="btn btn-primary" ng-show="addNoteShow" ng-click="addNoteSubmit();addNoteShow=false;addNoteContent=null">Submit Note</button>
+          <button class="btn btn-default" ng-show="addNoteShow" ng-click="addNoteShow=false;addNoteContent=null">Cancel</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" ng-show="taskDetails.status==0||taskDetails.status==2" ng-click="startSession()">Start Session</button>
+        <button class="btn btn-primary" ng-show="taskDetails.status==1" ng-click="endSession()">End Session</button>
+        <button class="btn btn-success" ng-show="taskDetails.status==2" ng-click="taskComplete()">Task Complete</button>
+        <button class="btn btn-warning" ng-show="taskDetails.status==3" ng-click="taskReopen()">Reopen Task</button>
+        <button class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- log out confirmation modal -->
+<div class="modal fade" id="logout-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <div><h2>Log out?</h2><div>
+        <div>
+          <button class="btn btn-danger" type="type" ng-click="logout()">Log Out</button>
+          <button class="btn btn-default" type="type" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

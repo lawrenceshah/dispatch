@@ -2,80 +2,49 @@
   <button class="logout-button btn btn-default" ng-click="logout();">Log Out</button>
   <h1>Manager Page</h1>
   <div>Logged in as <strong>{{user.name}}</strong></div>
-  <h2>Jobs</h2>
+  <h2>Tasks</h2>
   <div class="panel panel-default">
     <div class="panel-heading">
-      <strong>Create New Job</strong>
+      <strong>Create New Task</strong>
+    </div>
+    <div>
+      <div class="panel-body">
+        <form>
+          <h3>Customer Details</h3>
+          <div class="form-group">
+            <label for="new-task-name">Name:</label>
+            <input class="form-control" id="new-task-name" type="text" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label for="new-task-phone">Phone:</label>
+            <input class="form-control" id="new-task-phone" type="text" placeholder="(123) 456-7890" />
+          </div>
+          <div class="form-group">
+            <label for="new-task-address">Address:</label>
+            <input class="form-control" id="new-task-address" type="text" placeholder="123 Some Street" />
+          </div>
+          <h3>Task Details</h3>
+          <div class="form-group">
+            <label for="new-task-scheduled-date">Schedule Date:</label>
+            <input class="form-control" id="new-task-schedule-date" type="date" />
+          </div>
+          <div class="form-group">
+            <label for="new-task-scheduled-time">Schedule Time:</label>
+            <input class="form-control" id="new-task-schedule-time" type="time" />
+          </div>
+          <div class="form-group">
+            <label for="new-task-description">Description:</label>
+            <textarea class="form-control" id="new-task-description" placeholder="Task description" style="resize:vertical" />
+          </div>
+        </form>
+      </div>
     </div>
   </div>
   <div class="panel panel-default">
-    <div class="panel-heading" data-toggle="collapse" data-target="#existing-jobs-panel-body">
-      <strong>Existing Jobs</strong>
-    </div>
-    <div class="collapse" id="existing-jobs-panel-body">
-      <div class="panel-body">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            Search jobs by:
-          </div>
-          <div class="panel-body">
-            <button class="btn btn-default" type="buttton">Job ID</button>
-          </div>
-          <div class="panel-footer">
-            <button class="btn btn-primary" type="submit">Apply</button>
-            <button class="btn btn-default" type="button">Cancel</button>
-          </div>
-        </div>
-        
-        <table class="table table-striped table-bordered">
-          <tr ng-repeat="job in jobs" data-toggle="modal" data-target="#job-details-modal" ng-click="jobDetailsFill(job.jobId)">
-            <td>
-              <div><strong>Job ID:</strong> {{job.jobId}}</div>
-              <div><strong>Customer Name:</strong> {{job.customer.name}}</div>
-              <div><strong>Technician ID:</strong> {{job.technicianId}}</div>
-              <div><strong>Scheduled Date:</strong> {{job.scheduledDate}}</div>
-              <div><strong>Status:</strong> {{job.status}}</div>
-              <div><strong>Description:</strong> {{job.description}}</div>
-            </td>
-          </tr>
-        </table>
-      </div>
+    <div class="panel-heading">
+      <strong>Existing Tasks</strong>
     </div>
   </div>
   
   <h2>Technicians</h2>
-  
-</div>
-
-<div class="modal fade" id="job-details-modal">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-body">
-        <h2>Job Details</h2>
-        <div><strong>Job ID:</strong> {{jobDetailsJob.jobId}}</div>
-        <div><strong>Customer Name:</strong> {{jobDetailsJob.customer.name}}</div>
-        <div><strong>Customer Phone:</strong> {{jobDetailsJob.customer.phone}}</div>
-        <div><strong>Customer Address:</strong> {{jobDetailsJob.customer.address}}</div>
-        <div><strong>Technician ID:</strong> {{jobDetailsJob.technicianId}}</div>
-        <div><strong>Scheduled Date:</strong> {{jobDetailsJob.scheduledDate}}</div>
-        <div><strong>Status:</strong> {{jobDetailsJob.status}}</div>
-        <div><strong>Description:</strong> {{jobDetailsJob.description}}</div>
-        <div>
-          <strong>Sessions:</strong>
-          <table class="table table-striped table-bordered">
-            <tr ng-repeat="session in jobDetailsJob.sessions">
-              <td>
-                <div><strong>Start:</strong> {{session.startTime}}</div>
-                <div><strong>End:</strong> {{session.endTime}}</div>
-                <div>
-                  <strong>Notes:</strong>
-                  <div ng-repeat="note in session.notes"><strong>{{note.time}} (User {{note.userId}}) -</strong> {{note.note}}</div>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
