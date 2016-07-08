@@ -1,4 +1,4 @@
-<div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADNG...</div></div>
+<div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADING...</div></div>
 
 <div class="main-container container text-center">
   <h1>Dispatch</h1>
@@ -13,11 +13,11 @@
         <form ng-submit="submit()">
           <div class="form-group">
             <label for="main-username">Username</label>
-            <input class="form-control" id="main-username" type="text" placeholder="Username" ng-model="username" />
+            <input class="form-control" id="main-username" type="text" placeholder="Username" ng-model="username" required/>
           </div>
           <div class="form-group">
             <label for="main-password">Password</label>
-            <input class="form-control" id="main-password" type="password" placeholder="Password" ng-model="password" />
+            <input class="form-control" id="main-password" type="password" placeholder="Password" ng-model="password" required/>
           </div>
           <button class="btn btn-primary" type="submit">Submit</button>
           <button class="btn btn-default" type="button" data-dismiss="modal">Cancel</button>
@@ -36,8 +36,14 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
-        <div>Test user info</div>
+        <div>Test users info</div>
+        <div>&nbsp;</div>
+        <div>Role: Technician</div>
         <div>Username: johndoe</div>
+        <div>Password: password</div>
+        <div>&nbsp;</div>
+        <div>Role: Manager</div>
+        <div>Username: bobjones</div>
         <div>Password: password</div>
       </div>
     </div>

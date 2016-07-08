@@ -1,50 +1,73 @@
-<div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADNG...</div></div>
+<div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADING...</div></div>
 
 <div class="container">
   <button class="logout-button btn btn-default" type="button" data-toggle="modal" data-target="#logout-modal">Log Out</button>
-  <button class="page-refresh-button btn btn-default" type="button" ng-click="refresh()">Refresh Page</button>
+  <button class="page-refresh-button btn btn-info" type="button" ng-click="refresh()">Refresh</button>
   <h1>Technician View</h1>
   <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
-  <h2>Tasks</h2>
-  <!-- task filter panel -->
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      Filter tasks by: (Coming Soon)
+  <section>
+    <h2 data-toggle="collapse" data-target="#task-section-collapse" ng-click="taskSectionOpen=!taskSectionOpen">Tasks <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="taskSectionOpen"></div></h2>
+    <div class="collapse" id="task-section-collapse">
+      <!-- task filter panel -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <strong>Filter tasks by:</strong>
+        </div>
+        <form ng-submit="getTasks()">
+          <div class="panel-body">
+            <button class="task-filter-button btn btn-default" type="button" data-id="taskId" ng-click="taskFilterButtonOpen('taskId',$event)">
+              <strong>Task ID</strong>
+              <span class="task-filter-button-close" ng-click="taskFilterButtonClose('taskId',$event)"><div class="glyphicon glyphicon-remove"></div></span>
+              <input class="form-control task-filter-button-input" type="text" placeholder="Task ID" ng-model="taskFilter.taskId" />
+            </button>
+            <button class="task-filter-button btn btn-default" type="button" data-id="status" ng-click="taskFilterButtonOpen('status',$event)">
+              <strong>Status</strong>
+              <span class="task-filter-button-close" ng-click="taskFilterButtonClose('status',$event)"><div class="glyphicon glyphicon-remove"></div></span>
+              <select class="form-control task-filter-button-input" ng-model="taskFilter.status" ng-options="taskStatusDict.indexOf(value) as value for value in taskStatusDict">
+                <option value="">-Status-</option>
+              </select>
+            </button>
+            <button class="task-filter-button btn btn-default" type="button" data-id="scheduledDate" ng-click="taskFilterButtonOpen('scheduledDate',$event)">
+              <strong>ScheduledDate</strong>
+              <span class="task-filter-button-close" ng-click="taskFilterButtonClose('scheduledDate',$event)"><div class="glyphicon glyphicon-remove"></div></span>
+              <input class="form-control task-filter-button-input" type="date" ng-model="taskFilter.scheduledDate" />
+            </button>
+          </div>
+          <div class="panel-footer text-right">
+            <button class="btn btn-primary" type="submit">Apply</button>
+            <button class="btn btn-danger" type="button" ng-click="taskFilterClear()">Clear</button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- task table -->
+      <table class="task-table table table-bordered table-striped">
+        <tbody ng-show="tasksLoaded">
+          <tr ng-repeat="task in tasks | orderBy:'taskId'" ng-class="{info: task.status==2||task.status==3,success:task.status==4||task.status==5,danger:(task.status==0||task.status==1)&&task.scheduledDate<time}">
+            <td>
+              <h4><strong>Task ID: {{task.taskId}}</strong></h4>
+              <div class="task-table-field"><strong>Status:</strong> {{taskStatusDict[task.status]}}</div>
+              <div class="task-table-field"><strong>Scheduled Date:</strong> {{task.scheduledDate | date:'[MM/dd/yyyy] h:mma'}}</div>
+              <div class="task-table-field"><strong>Customer Name:</strong> {{task.customer.name}}</div>
+              <div class="task-table-field"><strong>Description:</strong> {{task.description}}</div>
+              <div class="text-right"><button class="btn btn-primary" type="button" data-toggle="modal" data-target="#task-details-modal" ng-click="fillTaskDetails(task.taskId)">Task Details</button></div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr ng-hide="tasksLoaded">
+            <td class="text-center" colspan="4">LOADING TASKS...</td>
+          </tr>
+          <tr ng-hide="tasks">
+            <td class="text-center" colspan="4">There are currently no such tasks.</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
-    <div class="panel-body">
-      <button class="btn btn-default" type="button">Task ID</button>
-    </div>
-    <div class="panel-footer">
-      <button class="btn btn-primary" type="submit">Apply</button>
-      <button class="btn btn-default" type="button">Clear</button>
-    </div>
-  </div>
-  
-  <!-- tasks table -->
-  <table class="tasks-table table table-bordered table-striped">
-    <tbody ng-show="tasksLoaded">
-      <tr ng-repeat="task in tasks | orderBy:'taskId'" ng-class="{info: task.status==1||task.status==2,warning:task.status==3,success:task.status==4}">
-        <td>
-          <h4><strong>Task ID: {{task.taskId}}</strong></h4>
-          <div class="tasks-table-field"><strong>Status:</strong> {{taskStatusDict[task.status]}}</div>
-          <div class="tasks-table-field"><strong>Scheduled Date:</strong> {{task.scheduledDate | date:'[MM/dd/yyyy] h:mma'}}</div>
-          <div class="tasks-table-field"><strong>Customer Name:</strong> {{task.customer.name}}</div>
-          <div class="tasks-table-field"><strong>Description:</strong> {{task.description}}</div>
-          <div class="text-right"><button class="btn btn-primary" type="button" data-toggle="modal" data-target="#task-details-modal" ng-click="fillTaskDetails(task.taskId)">Task Details</button></div>
-        </td>
-      </tr>
-    </tbody>
-    <tfoot>
-      <tr ng-hide="tasksLoaded">
-        <td class="text-center" colspan="4">LOADING TASKS...</td>
-      </tr>
-      <tr ng-hide="tasks">
-        <td class="text-center" colspan="4">There are currently no such tasks.</td>
-      </tr>
-    </tfoot>
-  </table>
-  
-  <h2>Statistics (Coming Soon)</h2>
+  </section>
+  <section>
+    <h2>Statistics (Coming)</h2>
+  </section>
 </div>
 
 <!-- task details modal -->
@@ -53,7 +76,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <strong>Task Details for Task {{taskDetails.taskId}}</strong>
-        <button class="task-details-refresh-button btn btn-default" type="button" ng-click="fillTaskDetails(taskDetails.taskId)">Refresh Task</button>
+        <button class="task-details-refresh-button btn btn-default" type="button" ng-click="fillTaskDetails(taskDetails.taskId)">Refresh</button>
       </div>
       <div class="modal-body">
         <strong>Status</strong>
@@ -93,19 +116,21 @@
             <td>There are no notes on record.</td>
           </tr>
         </table>
-        <textarea class="form-control" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em"></textarea>
-        <div class="text-right">
-          <button class="btn btn-primary" ng-hide="addNoteShow" ng-click="addNoteShow=true">Add New Note</button>
-          <button class="btn btn-primary" ng-show="addNoteShow" ng-click="addNoteSubmit();addNoteShow=false;addNoteContent=null">Submit Note</button>
-          <button class="btn btn-default" ng-show="addNoteShow" ng-click="addNoteShow=false;addNoteContent=null">Cancel</button>
-        </div>
+        <form ng-submit="addNoteSubmit();addNoteShow=false;addNoteContent=null">
+          <textarea class="form-control" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em" required></textarea>
+          <div class="text-right">
+            <button class="btn btn-primary" type="button" ng-hide="addNoteShow" ng-click="addNoteShow=true">Add New Note</button>
+            <button class="btn btn-primary" type="submit" ng-show="addNoteShow">Submit Note</button>
+            <button class="btn btn-default" type="button" ng-show="addNoteShow" ng-click="addNoteShow=false;addNoteContent=null">Cancel</button>
+          </div>
+        </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" ng-show="taskDetails.status==0||taskDetails.status==2" ng-click="startSession()">Start Session</button>
-        <button class="btn btn-primary" ng-show="taskDetails.status==1" ng-click="endSession()">End Session</button>
-        <button class="btn btn-success" ng-show="taskDetails.status==2" ng-click="taskComplete()">Task Complete</button>
-        <button class="btn btn-warning" ng-show="taskDetails.status==3" ng-click="taskReopen()">Reopen Task</button>
-        <button class="btn btn-default" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary" type="button" ng-show="taskDetails.status==0||taskDetails.status==2" ng-click="startSession()">Start Session</button>
+        <button class="btn btn-primary" type="button" ng-show="taskDetails.status==1" ng-click="endSession()">End Session</button>
+        <button class="btn btn-success" type="button" ng-show="taskDetails.status==2" ng-click="taskComplete()">Task Complete</button>
+        <button class="btn btn-warning" type="button" ng-show="taskDetails.status==3" ng-click="taskReopen()">Reopen Task</button>
+        <button class="btn btn-default" type="button" data-dismiss="modal" ng-click="getTasks()">Close</button>
       </div>
     </div>
   </div>

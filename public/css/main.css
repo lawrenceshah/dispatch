@@ -23,6 +23,15 @@
   width: 100%;
 }
 
+section {
+  border-top: 1px solid black;
+  margin-top: 1em;
+}
+
+section:last-of-type {
+  border-bottom: 1px solid black;
+}
+
 .main-container {
   margin-top: 20%;
   margin-top: 20vh;
@@ -42,7 +51,28 @@
   margin-top: 1em;
 }
 
-.tasks-table-field {
+.task-filter-button {
+  margin-bottom: 0.5em;
+}
+
+.task-filter-button-close {
+  display: none;
+  float: right;
+}
+
+button.active .task-filter-button-close {
+  display: inline;
+}
+
+.task-filter-button-input {
+  display: none;
+}
+
+button.active .task-filter-button-input {
+  display: block;
+}
+
+.task-table-field {
   margin-bottom: 0.5em;
 }
 
@@ -53,4 +83,9 @@
 .task-details-modal-field {
   margin-bottom: 0.5em;
   margin-left: 1em;
+}
+
+.task-details-assign-tech-select {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
