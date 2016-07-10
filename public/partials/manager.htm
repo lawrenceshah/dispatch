@@ -6,41 +6,47 @@
   <h1>Manager View</h1>
   <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
   <section>
-    <h2 data-toggle="collapse" data-target="#task-section-collapse" ng-click="taskSectionOpen=!taskSectionOpen">Tasks <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="taskSectionOpen"></div></h2>
+    <h2 data-toggle="collapse" data-target="#task-section-collapse" ng-click="taskSectionOpen=!taskSectionOpen">
+      Tasks
+      <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="taskSectionOpen"></div>
+    </h2>
     <div class="collapse" id="task-section-collapse">
       <!-- create new task panel -->
-      <div class="panel panel-default">
-        <div class="panel-heading" data-toggle="collapse" data-target="#create-new-task-collapse">
-          <strong>Create New Task <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom;font-size: 1.5em"></div></strong>
+      <div class="panel panel-success">
+        <div class="panel-heading" data-toggle="collapse" data-target="#create-new-task-collapse" ng-click="createNewTaskOpen=!createNewTaskOpen">
+          <strong>Create New Task <div class="glyphicon glyphicon-chevron-down" ng-hide="createNewTaskOpen" style="vertical-align:bottom;font-size: 1.5em"></div></strong>
         </div>
         <div class="collapse" id="create-new-task-collapse">
           <form ng-submit="createNewTask()">
-            <div class="panel-body">
-              <div class="form-group">
-                <label>Scheduled Date</label>
-                <input class="form-control" type="datetime-local" ng-model="newTask.scheduledDate" required />
+            <fieldset>
+              <div class="panel-body">
+                <div class="form-group">
+                  <label>Scheduled Date</label>
+                  <input class="form-control" type="datetime-local" ng-model="newTask.scheduledDate" required />
+                </div>
+                <div class="form-group">
+                  <label>Customer Name</label>
+                  <input class="form-control" type="text" placeholder="e.g. John Smith" ng-model="newTask.customer.name" required />
+                </div>
+                <div class="form-group">
+                  <label>Customer Phone</label>
+                  <input class="form-control" type="tel" inputmode="tel" placeholder="e.g. (123) 456-7890" ng-model="newTask.customer.phone" required />
+                </div>
+                <div class="form-group">
+                  <label>Customer Address</label>
+                  <input class="form-control" type="text" placeholder="e.g. 123 Some Street, Cityville, CA 90210" ng-model="newTask.customer.address" required />
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea class="form-control" id="new-task-description" placeholder="e.g. Installing a new phone line." ng-model="newTask.description" style="resize:vertical" required />
+                  <pre id="new-task-description-mirror">{{newTask.description}}<div>&nbsp;</div></pre>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Customer Name</label>
-                <input class="form-control" type="text" placeholder="e.g. John Smith" ng-model="newTask.customer.name" required />
+              <div class="panel-footer text-right">
+                <button class="btn btn-primary" type="submit">Create Task</button>
+                <button class="btn btn-danger" type="button" ng-click="createNewTaskCancel()">Cancel</button>
               </div>
-              <div class="form-group">
-                <label>Customer Phone</label>
-                <input class="form-control" type="text" placeholder="e.g. (123) 456-7890" ng-model="newTask.customer.phone" required />
-              </div>
-              <div class="form-group">
-                <label>Customer Address</label>
-                <input class="form-control" type="text" placeholder="e.g. 123 Some Street, Cityville, CA 90210" ng-model="newTask.customer.address" required />
-              </div>
-              <div class="form-group">
-                <label>Description</label>
-                <textarea class="form-control" placeholder="e.g. Installing a new phone line." ng-model="newTask.description" style="resize:vertical" required />
-              </div>
-            </div>
-            <div class="panel-footer text-right">
-              <button class="btn btn-primary" type="submit">Create Task</button>
-              <button class="btn btn-danger" type="button" ng-click="createNewTaskCancel()">Cancel</button>
-            </div>
+            </fieldset>
           </form>
         </div>
       </div>
@@ -80,13 +86,14 @@
       <!-- task table -->
       <table class="task-table table table-bordered table-striped">
         <tbody ng-show="tasksLoaded">
-          <tr ng-repeat="task in tasks | orderBy:'taskId'" ng-class="{info: task.status==2||task.status==3,success:task.status==4||task.status==5,danger:(task.status==0||task.status==1)&&task.scheduledDate<time}">
+          <tr ng-repeat="task in tasks | orderBy:'-taskId'" ng-class="{info: task.status==2||task.status==3,success:task.status==4||task.status==5,danger:(task.status==0||task.status==1)&&task.scheduledDate<time}">
             <td>
               <h4><strong>Task ID: {{task.taskId}}</strong></h4>
               <div class="task-table-field"><strong>Status:</strong> {{taskStatusDict[task.status]}}</div>
               <div class="task-table-field"><strong>Scheduled Date:</strong> {{task.scheduledDate | date:'[MM/dd/yyyy] h:mma'}}</div>
               <div class="task-table-field"><strong>Customer Name:</strong> {{task.customer.name}}</div>
-              <div class="task-table-field"><strong>Description:</strong> {{task.description}}</div>
+              <div class="task-table-field"><strong>Description:</strong> {{task.description | limitTo:80}}...</div>
+              <div class="task-table-field"><strong>Technician ID:</strong> <span ng-show="task.techId">{{task.techId}} ({{getTechById(task.techId).name}})</span><span ng-hide="task.techId">Unassigned</span></div>
               <div class="text-right"><button class="btn btn-primary" type="button" data-toggle="modal" data-target="#task-details-modal" ng-click="fillTaskDetails(task.taskId)">Task Details</button></div>
             </td>
           </tr>
@@ -95,7 +102,7 @@
           <tr ng-hide="tasksLoaded">
             <td class="text-center" colspan="4">LOADING TASKS...</td>
           </tr>
-          <tr ng-hide="tasks">
+          <tr ng-hide="tasks.length">
             <td class="text-center" colspan="4">There are currently no such tasks.</td>
           </tr>
         </tfoot>
@@ -103,7 +110,52 @@
     </div>
   </section>
   <section>
-    <h2>Technicians (Coming)</h2>
+    <h2 data-toggle="collapse" data-target="#technician-section-collapse" ng-click="technicianSectionOpen=!technicianSectionOpen">
+      Technicians
+      <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="technicianSectionOpen"></div>
+    </h2>
+    <div class="collapse" id="technician-section-collapse">
+      <!-- technician filter panel -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <strong>Filter technicians by:</strong>
+        </div>
+        <form ng-submit="getTechnicians()">
+          <div class="panel-body">
+            <button class="technician-filter-button btn btn-default" type="button" data-id="technicianId" ng-click="technicianFilterButtonOpen('technicianId',$event)">
+              <strong>Technician ID</strong>
+              <span class="technician-filter-button-close" ng-click="technicianFilterButtonClose('technicianId',$event)"><div class="glyphicon glyphicon-remove"></div></span>
+              <input class="form-control technician-filter-button-input" type="text" placeholder="Technician ID" ng-model="technicianFilter.technicianId" />
+            </button>
+          </div>
+          <div class="panel-footer text-right">
+            <button class="btn btn-primary" type="submit">Apply</button>
+            <button class="btn btn-danger" type="button" ng-click="technicianFilterClear()">Clear</button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- technician table -->
+      <table class="technician-table table table-bordered table-striped">
+        <tbody ng-show="techniciansLoaded">
+          <tr ng-repeat="technician in technicians | orderBy:'userId'">
+            <td>
+              <h4><strong>Technician ID: {{technician.userId}}</strong></h4>
+              <div class="technician-table-field"><strong>Technician Name:</strong> {{technician.name}}</div>
+              <div class="text-right"><button class="btn btn-primary" type="button" data-toggle="modal" data-target="#technician-details-modal" ng-click="fillTechnicianDetails(technician.userId)">Technician Details</button></div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr ng-hide="techniciansLoaded">
+            <td class="text-center" colspan="4">LOADING TECHNICIANS...</td>
+          </tr>
+          <tr ng-hide="technicians.length">
+            <td class="text-center" colspan="4">There are currently no such technicians.</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </section>
   <section>
     <h2>Statistics (Coming)</h2>
@@ -115,7 +167,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <strong>Task Details for Task {{taskDetails.taskId}}</strong>
+        <strong>Details for Task {{taskDetails.taskId}}</strong>
         <button class="task-details-refresh-button btn btn-info" type="button" ng-click="fillTaskDetails(taskDetails.taskId)">Refresh</button>
       </div>
       <div class="modal-body">
@@ -137,6 +189,7 @@
             <td>
               <div><strong>Start Time:</strong> {{session.startTime | date:'[MM/dd/yyyy] h:mma'}}</div>
               <div><strong>End Time:</strong> <span ng-show="session.endTime>0">{{session.endTime | date:'[MM/dd/yyyy] h:mma'}}</span><span ng-show="session.endTime==-1">In Progress</span></div>
+              <div><strong>Technician ID:</strong> {{session.techId}} ({{getTechById(session.techId).name}})</div>
             </td>
           </tr>
           <tr ng-hide="taskDetails.sessions">
@@ -157,7 +210,8 @@
           </tr>
         </table>
         <form ng-submit="addNoteSubmit();addNoteShow=false;addNoteContent=null">
-          <textarea class="form-control" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em" required></textarea>
+          <textarea class="form-control" id="new-note" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em" required></textarea>
+          <pre id="new-note-mirror">{{addNoteContent}}<div>&nbsp;</div></pre>
           <div class="text-right">
             <button class="btn btn-primary" type="button" ng-hide="addNoteShow" ng-click="addNoteShow=true">Add New Note</button>
             <button class="btn btn-primary" type="submit" ng-show="addNoteShow">Submit Note</button>
@@ -176,6 +230,27 @@
         <button class="btn btn-danger" type="button" ng-hide="confirmDeleteTask" ng-click="confirmDeleteTask=true">Delete Task</button>
         <button class="btn btn-danger" type="button" ng-show="confirmDeleteTask" ng-click="deleteTask()">Confirm Delete Task</button>
         <button class="btn btn-danger" type="button" data-dismiss="modal" ng-click="getTasks()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- technicians details modal -->
+<div class="modal fade" id="technician-details-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <strong>Details for Technician {{technicianDetails.userId}}</strong>
+        <button class="technician-details-refresh-button btn btn-info" type="button" ng-click="fillTechnicianDetails(technicianDetails.userId)">Refresh</button>
+      </div>
+      <div class="modal-body">
+        <strong>Technician Name:</strong>
+        <div class="technician-details-modal-field">{{technicianDetails.name}}</div>
+        <strong>Currently Assigned Tasks:</strong>
+        <div class="technician-details-modal-field" ng-repeat="task in technicianDetails.assignedTasks">{{task.taskId}} ({{taskStatusDict[task.status]}})</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" type="button" data-dismiss="modal" ng-click="getTechnicians()">Close</button>
       </div>
     </div>
   </div>

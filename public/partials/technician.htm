@@ -1,12 +1,15 @@
 <div class="loading-mask" ng-hide="pageLoaded"><div class="loading-mask-text">LOADING...</div></div>
 
 <div class="container">
-  <button class="logout-button btn btn-default" type="button" data-toggle="modal" data-target="#logout-modal">Log Out</button>
+  <button class="logout-button btn btn-danger" type="button" data-toggle="modal" data-target="#logout-modal">Log Out</button>
   <button class="page-refresh-button btn btn-info" type="button" ng-click="refresh()">Refresh</button>
   <h1>Technician View</h1>
   <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
   <section>
-    <h2 data-toggle="collapse" data-target="#task-section-collapse" ng-click="taskSectionOpen=!taskSectionOpen">Tasks <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="taskSectionOpen"></div></h2>
+    <h2 data-toggle="collapse" data-target="#task-section-collapse" ng-click="taskSectionOpen=!taskSectionOpen">
+      Tasks
+      <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom" ng-hide="taskSectionOpen"></div>
+    </h2>
     <div class="collapse" id="task-section-collapse">
       <!-- task filter panel -->
       <div class="panel panel-default">
@@ -43,7 +46,7 @@
       <!-- task table -->
       <table class="task-table table table-bordered table-striped">
         <tbody ng-show="tasksLoaded">
-          <tr ng-repeat="task in tasks | orderBy:'taskId'" ng-class="{info: task.status==2||task.status==3,success:task.status==4||task.status==5,danger:(task.status==0||task.status==1)&&task.scheduledDate<time}">
+          <tr ng-repeat="task in tasks | orderBy:'-taskId'" ng-class="{info: task.status==2||task.status==3,success:task.status==4||task.status==5,danger:(task.status==0||task.status==1)&&task.scheduledDate<time}">
             <td>
               <h4><strong>Task ID: {{task.taskId}}</strong></h4>
               <div class="task-table-field"><strong>Status:</strong> {{taskStatusDict[task.status]}}</div>
@@ -75,7 +78,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <strong>Task Details for Task {{taskDetails.taskId}}</strong>
+        <strong>Details for Task {{taskDetails.taskId}}</strong>
         <button class="task-details-refresh-button btn btn-default" type="button" ng-click="fillTaskDetails(taskDetails.taskId)">Refresh</button>
       </div>
       <div class="modal-body">
@@ -97,6 +100,7 @@
             <td>
               <div><strong>Start Time:</strong> {{session.startTime | date:'[MM/dd/yyyy] h:mma'}}</div>
               <div><strong>End Time:</strong> <span ng-show="session.endTime>0">{{session.endTime | date:'[MM/dd/yyyy] h:mma'}}</span><span ng-show="session.endTime==-1">In Progress</span></div>
+              <div><strong>Technician ID:</strong> {{session.techId}} ({{getTechById(session.techId).name}})</div>
             </td>
           </tr>
           <tr ng-hide="taskDetails.sessions">
@@ -117,7 +121,8 @@
           </tr>
         </table>
         <form ng-submit="addNoteSubmit();addNoteShow=false;addNoteContent=null">
-          <textarea class="form-control" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em" required></textarea>
+          <textarea class="form-control"id="new-note" placeholder="Write your note here" ng-model="addNoteContent" ng-show="addNoteShow" style="resize:vertical;margin-bottom:0.5em" required></textarea>
+          <pre id="new-note-mirror">{{addNoteContent}}<div>&nbsp;</div></pre>
           <div class="text-right">
             <button class="btn btn-primary" type="button" ng-hide="addNoteShow" ng-click="addNoteShow=true">Add New Note</button>
             <button class="btn btn-primary" type="submit" ng-show="addNoteShow">Submit Note</button>

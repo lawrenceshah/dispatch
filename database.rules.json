@@ -6,7 +6,7 @@
       ".indexOn": ["techId","taskId","scheduledDate"]
     },
     "users": {
-      ".indexOn": ["role"]
+      ".indexOn": ["role","userId"]
     }
   }
 }

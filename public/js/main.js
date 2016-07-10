@@ -136,9 +136,10 @@ angular.module('dispatchApp', ['ngRoute'])
           $scope.user = snapshot.val();
           Page.setTitle('Manager | '+$scope.user.name);
           $scope.pageLoaded = true;
-          $scope.$apply();
           $scope.getTasks();
           $scope.getAllTechnicians();
+          $scope.getTechnicians();
+          $scope.$apply();
         } else {
           // no user data found
           console.log('nope');
@@ -156,10 +157,10 @@ angular.module('dispatchApp', ['ngRoute'])
   // get tasks from database
   $scope.getTasks = function() {
     $scope.pageLoaded = false;
-    // check filters
     firebase.database().ref('/tasks').once('value').then(function(snapshot) {
       if (snapshot.exists()) {
         $scope.tasks = snapshot.val();
+        // check filters
         if ($scope.taskFilter) {
           if ($scope.taskFilter.taskId) {
             var key = parseInt($scope.taskFilter.taskId);
@@ -185,9 +186,12 @@ angular.module('dispatchApp', ['ngRoute'])
             }
           }
         }
-        if (Object.keys($scope.tasks).length === 0) {
-          delete $scope.tasks;
+        // convert tasks to array for sorting purposes
+        $scope.tasksArr = [];
+        for (var key in $scope.tasks) {
+          $scope.tasksArr.push($scope.tasks[key]);
         }
+        $scope.tasks = $scope.tasksArr;
         $scope.tasksLoaded = true;
       } else {
         $scope.tasksLoaded = true;
@@ -197,12 +201,36 @@ angular.module('dispatchApp', ['ngRoute'])
     });
   };
   
-  // get technicians data
+  // get all technicians data, for assigning tasks
   $scope.getAllTechnicians = function() {
     firebase.database().ref('/users').orderByChild('role').equalTo('technician').once('value').then(function(snapshot) {
       $scope.allTechnicians = snapshot.val();
     });
   };
+  
+  // return technician by id, for getting name
+  $scope.getTechById = function(id) {
+    for (var key in $scope.allTechnicians) {
+      if ($scope.allTechnicians[key].userId === id) {
+        return $scope.allTechnicians[key];
+      }
+    }
+    return false;
+  };
+  
+  $('#new-task-description-mirror')
+  .css({
+    'padding':$('#new-task-description').css('padding'),
+    'outline':$('#new-task-description').css('outline'),
+    'margin':$('#new-task-description').css('margin'),
+    'border':$('#new-task-description').css('border'),
+  }).width($('#new-task-description').width());
+  $('#new-task-description').on('input', function() {
+    window.setTimeout(function() {
+      $('#new-task-description-mirror').width($('#new-task-description').width());
+      $('#new-task-description').height($('#new-task-description-mirror').height());
+    }, 200);
+  });
   
   // create new task
   $scope.createNewTask = function() {
@@ -228,6 +256,7 @@ angular.module('dispatchApp', ['ngRoute'])
   // cancel and clear new task inputs
   $scope.createNewTaskCancel = function() {
     $scope.newTask = {};
+    $('#create-new-task-collapse').collapse('hide');
   };
   
   // open task filter
@@ -308,6 +337,20 @@ angular.module('dispatchApp', ['ngRoute'])
     });
   };
   
+  $('#new-note-mirror')
+  .css({
+    'padding':$('#new-note').css('padding'),
+    'outline':$('#new-note').css('outline'),
+    'margin':$('#new-note').css('margin'),
+    'border':$('#new-note').css('border'),
+  }).width($('#new-note').width());
+  $('#new-note').on('input', function() {
+    window.setTimeout(function() {
+      $('#new-note-mirror').width($('#new-note').width());
+      $('#new-note').height($('#new-note-mirror').height());
+    }, 200);
+  });
+  
   // add a note to the current task
   $scope.addNoteSubmit = function() {
     var t = Date.now();
@@ -316,11 +359,91 @@ angular.module('dispatchApp', ['ngRoute'])
       $scope.fillTaskDetails($scope.taskDetails.taskId);
     });
   }
+  
+  // get technicians, possibly filtered
+  $scope.getTechnicians = function() {
+    $scope.pageLoaded = false;
+    firebase.database().ref('/users').orderByChild('role').equalTo('technician').once('value').then(function(snapshot) {
+      if (snapshot.exists()) {
+        $scope.techniciansTemp = snapshot.val();
+        $scope.technicians = null;
+        // check filters
+        if ($scope.technicianFilter) {
+          if ($scope.technicianFilter.technicianId) {
+            var userId = parseInt($scope.technicianFilter.technicianId);
+            for (var key in $scope.techniciansTemp) {
+              if ($scope.techniciansTemp[key].userId === userId) {
+                $scope.technicians = {key:$scope.techniciansTemp[key]};
+                break;
+              }
+            }
+          }
+        } else {
+          $scope.technicians = $scope.techniciansTemp;
+        }
+        // convert tasks to array for sorting purposes
+        $scope.techniciansArr = [];
+        for (var key in $scope.technicians) {
+          $scope.techniciansArr.push($scope.technicians[key]);
+        }
+        $scope.technicians = $scope.techniciansArr;
+        $scope.techniciansLoaded = true;
+      } else {
+        $scope.techniciansLoaded = true;
+      }
+      $scope.pageLoaded = true;
+      $scope.$apply();
+    });
+  };
+  
+  // open technician filter
+  $scope.technicianFilterButtonOpen = function(id) {
+    $('.technician-filter-button[data-id="'+id+'"]').addClass('active').find('input').focus();
+  };
+  
+  // close technician filter
+  $scope.technicianFilterButtonClose = function(id, e) {
+    e.stopPropagation();
+    $('.technician-filter-button[data-id="'+id+'"]').removeClass('active');
+    if ($scope.technicianFilter) {
+      delete $scope.technicianFilter[id];
+      if ($scope.technicianFilter === {}) {
+        $scope.technicianFilter = null;
+      }
+    }
+  };
+  
+  // clear technician filters
+  $scope.technicianFilterClear = function() {
+    $scope.technicianFilter = null;
+    $('.technician-filter-button').removeClass('active');
+  };
+  
+  // fills technician details modal
+  $scope.fillTechnicianDetails = function(id) {
+    firebase.database().ref('/users').orderByChild('userId').equalTo(id).once('value').then(function(snapshot) {
+      snapshot.forEach(function(child) {
+        $scope.technicianDetails = child.val();
+        firebase.database().ref('/tasks').orderByChild('techId').equalTo(id).once('value').then(function(snapshot2) {
+          $scope.technicianDetails.assignedTasks = snapshot2.val();
+          for (var key in $scope.technicianDetails.assignedTasks) {
+            if ($scope.technicianDetails.assignedTasks[key].status === 5) {
+              delete $scope.technicianDetails.assignedTasks[key];
+            }
+          }
+          $scope.$apply();
+          console.log($scope.technicianDetails);
+        });
+        $scope.$apply();
+      })
+    });
+  };
 })
 .controller('technicianCtrl', function($scope, $routeParams, Page, $window) {
   Page.setTitle('Technician');
   $scope.taskStatusDict = taskStatusDict;
   $scope.time = Date.now();
+  $scope.true = true;
   
   // check if user is signed in
   firebase.auth().onAuthStateChanged(function(user) {
@@ -332,8 +455,9 @@ angular.module('dispatchApp', ['ngRoute'])
           $scope.user = snapshot.val();
           Page.setTitle('Technician | '+$scope.user.name);
           $scope.pageLoaded = true;
-          $scope.$apply();
           $scope.getTasks();
+          $scope.getAllTechnicians();
+          $scope.$apply();
         } else {
           // no user data found
           console.log('nope');
@@ -351,10 +475,10 @@ angular.module('dispatchApp', ['ngRoute'])
   // get tasks from database
   $scope.getTasks = function() {
     $scope.pageLoaded = false;
-    // check filters
     firebase.database().ref('/tasks').orderByChild('techId').equalTo($scope.user.userId).once('value').then(function(snapshot) {
       if (snapshot.exists()) {
         $scope.tasks = snapshot.val();
+        // check filters
         if ($scope.taskFilter) {
           if ($scope.taskFilter.taskId) {
             var key = parseInt($scope.taskFilter.taskId);
@@ -380,9 +504,12 @@ angular.module('dispatchApp', ['ngRoute'])
             }
           }
         }
-        if (Object.keys($scope.tasks).length === 0) {
-          delete $scope.tasks;
+        // convert tasks to array for sorting purposes
+        $scope.tasksArr = [];
+        for (var key in $scope.tasks) {
+          $scope.tasksArr.push($scope.tasks[key]);
         }
+        $scope.tasks = $scope.tasksArr;
         $scope.tasksLoaded = true;
       } else {
         $scope.tasksLoaded = true;
@@ -390,6 +517,23 @@ angular.module('dispatchApp', ['ngRoute'])
       $scope.pageLoaded = true;
       $scope.$apply();
     });
+  };
+  
+  // get all technicians data, for assigning tasks
+  $scope.getAllTechnicians = function() {
+    firebase.database().ref('/users').orderByChild('role').equalTo('technician').once('value').then(function(snapshot) {
+      $scope.allTechnicians = snapshot.val();
+    });
+  };
+  
+  // return technician by id, for getting name
+  $scope.getTechById = function(id) {
+    for (var key in $scope.allTechnicians) {
+      if ($scope.allTechnicians[key].userId === id) {
+        return $scope.allTechnicians[key];
+      }
+    }
+    return false;
   };
   
   // open task filter
@@ -468,6 +612,20 @@ angular.module('dispatchApp', ['ngRoute'])
       $scope.getTasks();
     });
   };
+  
+  $('#new-note-mirror')
+  .css({
+    'padding':$('#new-note').css('padding'),
+    'outline':$('#new-note').css('outline'),
+    'margin':$('#new-note').css('margin'),
+    'border':$('#new-note').css('border'),
+  }).width($('#new-note').width());
+  $('#new-note').on('input', function() {
+    window.setTimeout(function() {
+      $('#new-note-mirror').width($('#new-note').width());
+      $('#new-note').height($('#new-note-mirror').height());
+    }, 200);
+  });
   
   // add a note to the current task
   $scope.addNoteSubmit = function() {
