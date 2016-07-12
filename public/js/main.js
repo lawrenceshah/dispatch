@@ -1,12 +1,12 @@
 // array of task statuses
-var taskStatusDict = [
-  'Scheduled (Unassigned)', // 0
-  'Scheduled (Assigned)', // 1
-  'In Progress (In Session)', // 2
-  'In Progress (Not In Session)', // 3
-  'Completed (Pending)', // 4
-  'Completed (Approved)', // 5
-];
+var taskStatusDict = {
+  0: 'Scheduled (Unassigned)',
+  1: 'Scheduled (Assigned)',
+  2: 'In Progress (In Session)',
+  3: 'In Progress (Not In Session)',
+  4: 'Completed (Pending)',
+  5: 'Completed (Approved)',
+};
 
 // Initialize Firebase
 var config = {
@@ -54,6 +54,19 @@ angular.module('dispatchApp', ['ngRoute'])
   
   return service;
 })
+// filter for showing x hours, y minutes
+.filter('hoursMinutes', function() {
+  return function(time) {
+    if (time !== null) {
+      var timeInMinutes = Math.floor(time/1000/60);
+      var hours = Math.floor(timeInMinutes/60);
+      var minutes = timeInMinutes%60;
+      
+      return hours+' Hours '+minutes+' minutes';
+    }
+    return null;
+  }
+})
 .controller('appCtrl', function($scope, Page, $window) {
   $scope.Page = Page;
   
@@ -61,7 +74,6 @@ angular.module('dispatchApp', ['ngRoute'])
   $scope.logout = function() {
     firebase.auth().signOut()
     .then(function(res) {
-      console.log(res);
     }, function(error) {
       console.log(error);
     });
@@ -84,7 +96,7 @@ angular.module('dispatchApp', ['ngRoute'])
           $window.location.href = '/'+snapshot.val().role+'/'+snapshot.val().userId;
         } else {
           // no user data found
-          console.log('nope');
+          console.log('no user data found');
           firebase.auth().signOut();
           $window.location.href = '/';
         }
@@ -108,8 +120,10 @@ angular.module('dispatchApp', ['ngRoute'])
     $scope.pageLoaded = false;
     firebase.auth().signInWithEmailAndPassword($scope.username+'@fake.email',$scope.password)
     .catch(function(error) {
-      console.log('error');
       console.log(error);
+      $scope.loginError = true;
+      $scope.pageLoaded = true;
+      $scope.$apply();
     })
     .then(function(res) {
       if (res) {
@@ -136,20 +150,26 @@ angular.module('dispatchApp', ['ngRoute'])
           $scope.user = snapshot.val();
           Page.setTitle('Manager | '+$scope.user.name);
           $scope.pageLoaded = true;
+          alert('getting tasks');
           $scope.getTasks();
+          alert('getting all technicians');
           $scope.getAllTechnicians();
+          alert('getting technicians');
           $scope.getTechnicians();
+          alert('getting total statistics');
+          $scope.getTotalStatistics();
+          alert('done');
           $scope.$apply();
         } else {
           // no user data found
-          console.log('nope');
+          console.log('no user data found');
           firebase.auth().signOut();
           $window.location.href = '/';
         }
       });
     } else {
       // No user is signed in.
-      console.log('nope');
+      console.log('not signed in');
       $window.location.href = '/';
     }
   });
@@ -163,16 +183,22 @@ angular.module('dispatchApp', ['ngRoute'])
         // check filters
         if ($scope.taskFilter) {
           if ($scope.taskFilter.taskId) {
-            var key = parseInt($scope.taskFilter.taskId);
-            var task = $scope.tasks[$scope.taskFilter.taskId];
-            $scope.tasks = {};
-            if (task !== undefined) {
-              $scope.tasks[key] = task;
+            for (var key in $scope.tasks) {
+              if ($scope.tasks[key].taskId !== parseInt($scope.taskFilter.taskId)) {
+                delete $scope.tasks[key];
+              }
+            }
+          }
+          if ($scope.taskFilter.techId) {
+            for (var key in $scope.tasks) {
+              if ($scope.tasks[key].techId !== parseInt($scope.taskFilter.techId)) {
+                delete $scope.tasks[key];
+              }
             }
           }
           if ($scope.taskFilter.status !== undefined) {
             for (var key in $scope.tasks) {
-              if ($scope.tasks[key].status !== $scope.taskFilter.status) {
+              if ($scope.tasks[key].status !== parseInt($scope.taskFilter.status)) {
                 delete $scope.tasks[key];
               }
             }
@@ -235,18 +261,12 @@ angular.module('dispatchApp', ['ngRoute'])
   // create new task
   $scope.createNewTask = function() {
     firebase.database().ref('/tasks').orderByChild('taskId').limitToLast(1).once('value').then(function(snapshot) {
-      console.log(snapshot.val());
       $scope.newTask.status = 0;
-      console.log($scope.newTask.scheduledDate);
-      console.log($scope.newTask.scheduledDate.valueOf());
       $scope.newTask.scheduledDate = $scope.newTask.scheduledDate.valueOf();
       snapshot.forEach(function(child) {
-        console.log(child.val());
         $scope.newTask.taskId = child.val().taskId+1;
       });
-      console.log($scope.newTask);
-      firebase.database().ref('/tasks').push($scope.newTask, function() {
-        console.log('new task created');
+      firebase.database().ref('/tasks/'+$scope.newTask.taskId).set($scope.newTask, function() {
         $scope.newTask = {};
         $scope.getTasks();
       });
@@ -295,7 +315,6 @@ angular.module('dispatchApp', ['ngRoute'])
   // assign task to technician
   $scope.assignTask = function() {
     firebase.database().ref('/tasks/'+$scope.taskDetails.taskId+'/techId').set($scope.taskDetails.techId, function() {
-      console.log('task assigned');
       if ($scope.taskDetails.techId === null) {
         firebase.database().ref('/tasks/'+$scope.taskDetails.taskId+'/status').set(0, function() {
           $scope.fillTaskDetails($scope.taskDetails.taskId);
@@ -329,7 +348,6 @@ angular.module('dispatchApp', ['ngRoute'])
     firebase.database().ref('/tasks').orderByChild('taskId').equalTo($scope.taskDetails.taskId).once('value').then(function(snapshot) {
       snapshot.forEach(function(child) {
         firebase.database().ref('/tasks/'+child.key).remove(function() {
-          console.log('task deleted');
           $('#task-details-modal').modal('hide');
           $scope.getTasks();
         });
@@ -432,18 +450,184 @@ angular.module('dispatchApp', ['ngRoute'])
             }
           }
           $scope.$apply();
-          console.log($scope.technicianDetails);
+          $scope.getTechnicianStatistics(id);
         });
-        $scope.$apply();
       })
+    });
+  };
+  
+  // statistics
+  $scope.getTechnicianStatistics = function(id) {
+    var cutoffWeek = new Date();
+    cutoffWeek.setDate(cutoffWeek.getDate() - (cutoffWeek.getDay()-1)%7);
+    cutoffWeek.setHours(0,0,0,0);
+    var statisticsWeekLabel = cutoffWeek.toDateString().slice(0,10);
+    cutoffWeek = cutoffWeek.valueOf();
+    
+    var cutoffTwoWeeks = new Date();
+    cutoffTwoWeeks.setDate(cutoffTwoWeeks.getDate() - (cutoffTwoWeeks.getDay()-1)%7 - 7);
+    cutoffTwoWeeks.setHours(0,0,0,0);
+    var statisticsTwoWeeksLabel = cutoffTwoWeeks.toDateString().slice(0,10);
+    cutoffTwoWeeks = cutoffTwoWeeks.valueOf();
+    
+    var cutoffMonth = new Date();
+    cutoffMonth.setDate(1);
+    cutoffMonth.setHours(0,0,0,0);
+    var statisticsMonthLabel = cutoffMonth.toDateString().slice(0,10);
+    cutoffMonth = cutoffMonth.valueOf();
+    
+    firebase.database().ref('/tasks').orderByChild('techId').equalTo(id).once('value').then(function(snapshot) {
+      var hoursWorkedWeek = 0;
+      var sessionsWorkedWeek = 0;
+      var tasksWorkedWeek = 0;
+      var tasksWorkedWeekObj = {};
+      
+      var hoursWorkedTwoWeeks = 0;
+      var sessionsWorkedTwoWeeks = 0;
+      var tasksWorkedTwoWeeks = 0;
+      var tasksWorkedTwoWeeksObj = {};
+      
+      var hoursWorkedMonth = 0;
+      var sessionsWorkedMonth = 0;
+      var tasksWorkedMonth = 0;
+      var tasksWorkedMonthObj = {};
+      
+      snapshot.forEach(function(child) {
+        var sessions = child.val().sessions;
+        for (key in sessions) {
+          if (sessions[key].endTime > cutoffWeek) {
+            hoursWorkedWeek += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffWeek);
+            sessionsWorkedWeek++;
+            tasksWorkedWeekObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffTwoWeeks) {
+            hoursWorkedTwoWeeks += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffTwoWeeks);
+            sessionsWorkedTwoWeeks++;
+            tasksWorkedTwoWeeksObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffMonth) {
+            hoursWorkedMonth += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffMonth);
+            sessionsWorkedMonth++;
+            tasksWorkedMonthObj[child.key] = true;
+          }
+        }
+      });
+      for (var key in tasksWorkedWeekObj) {
+        tasksWorkedWeek++;
+      }
+      for (var key in tasksWorkedTwoWeeksObj) {
+        tasksWorkedTwoWeeks++;
+      }
+      for (var key in tasksWorkedMonthObj) {
+        tasksWorkedMonth++;
+      }
+      $scope.technicianDetails.statisticsWeekLabel = statisticsWeekLabel;
+      $scope.technicianDetails.hoursWorkedWeek = hoursWorkedWeek;
+      $scope.technicianDetails.sessionsWorkedWeek = sessionsWorkedWeek;
+      $scope.technicianDetails.tasksWorkedWeek = tasksWorkedWeek;
+      
+      $scope.technicianDetails.statisticsTwoWeeksLabel = statisticsTwoWeeksLabel;
+      $scope.technicianDetails.hoursWorkedTwoWeeks = hoursWorkedTwoWeeks;
+      $scope.technicianDetails.sessionsWorkedTwoWeeks = sessionsWorkedTwoWeeks;
+      $scope.technicianDetails.tasksWorkedTwoWeeks = tasksWorkedTwoWeeks;
+      
+      $scope.technicianDetails.statisticsMonthLabel = statisticsMonthLabel;
+      $scope.technicianDetails.hoursWorkedMonth = hoursWorkedMonth;
+      $scope.technicianDetails.sessionsWorkedMonth = sessionsWorkedMonth;
+      $scope.technicianDetails.tasksWorkedMonth = tasksWorkedMonth;
+      $scope.$apply();
+    });
+  };
+  
+  $scope.getTotalStatistics = function() {
+    var cutoffWeek = new Date();
+    cutoffWeek.setDate(cutoffWeek.getDate() - (cutoffWeek.getDay()-1)%7);
+    cutoffWeek.setHours(0,0,0,0);
+    var totalStatisticsWeekLabel = cutoffWeek.toDateString().slice(0,10);
+    cutoffWeek = cutoffWeek.valueOf();
+    
+    var cutoffTwoWeeks = new Date();
+    cutoffTwoWeeks.setDate(cutoffTwoWeeks.getDate() - (cutoffTwoWeeks.getDay()-1)%7 - 7);
+    cutoffTwoWeeks.setHours(0,0,0,0);
+    var totalStatisticsTwoWeeksLabel = cutoffTwoWeeks.toDateString().slice(0,10);
+    cutoffTwoWeeks = cutoffTwoWeeks.valueOf();
+    
+    var cutoffMonth = new Date();
+    cutoffMonth.setDate(1);
+    cutoffMonth.setHours(0,0,0,0);
+    var totalStatisticsMonthLabel = cutoffMonth.toDateString().slice(0,10);
+    cutoffMonth = cutoffMonth.valueOf();
+    
+    firebase.database().ref('/tasks').once('value').then(function(snapshot) {
+      var totalHoursWorkedWeek = 0;
+      var totalSessionsWorkedWeek = 0;
+      var totalTasksWorkedWeek = 0;
+      var totalTasksWorkedWeekObj = {};
+      
+      var totalHoursWorkedTwoWeeks = 0;
+      var totalSessionsWorkedTwoWeeks = 0;
+      var totalTasksWorkedTwoWeeks = 0;
+      var totalTasksWorkedTwoWeeksObj = {};
+      
+      var totalHoursWorkedMonth = 0;
+      var totalSessionsWorkedMonth = 0;
+      var totalTasksWorkedMonth = 0;
+      var totalTasksWorkedMonthObj = {};
+      
+      snapshot.forEach(function(child) {
+        var sessions = child.val().sessions;
+        for (key in sessions) {
+          if (sessions[key].endTime > cutoffWeek) {
+            totalHoursWorkedWeek += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffWeek);
+            totalSessionsWorkedWeek++;
+            totalTasksWorkedWeekObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffTwoWeeks) {
+            totalHoursWorkedTwoWeeks += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffTwoWeeks);
+            totalSessionsWorkedTwoWeeks++;
+            totalTasksWorkedTwoWeeksObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffMonth) {
+            totalHoursWorkedMonth += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffMonth);
+            totalSessionsWorkedMonth++;
+            totalTasksWorkedMonthObj[child.key] = true;
+          }
+        }
+      });
+      for (var key in totalTasksWorkedWeekObj) {
+        totalTasksWorkedWeek++;
+      }
+      for (var key in totalTasksWorkedTwoWeeksObj) {
+        totalTasksWorkedTwoWeeks++;
+      }
+      for (var key in totalTasksWorkedMonthObj) {
+        totalTasksWorkedMonth++;
+      }
+      $scope.totalStatisticsWeekLabel = totalStatisticsWeekLabel;
+      $scope.totalHoursWorkedWeek = totalHoursWorkedWeek;
+      $scope.totalSessionsWorkedWeek = totalSessionsWorkedWeek;
+      $scope.totalTasksWorkedWeek = totalTasksWorkedWeek;
+      
+      $scope.totalStatisticsTwoWeeksLabel = totalStatisticsTwoWeeksLabel;
+      $scope.totalHoursWorkedTwoWeeks = totalHoursWorkedTwoWeeks;
+      $scope.totalSessionsWorkedTwoWeeks = totalSessionsWorkedTwoWeeks;
+      $scope.totalTasksWorkedTwoWeeks = totalTasksWorkedTwoWeeks;
+      
+      $scope.totalStatisticsMonthLabel = totalStatisticsMonthLabel;
+      $scope.totalHoursWorkedMonth = totalHoursWorkedMonth;
+      $scope.totalSessionsWorkedMonth = totalSessionsWorkedMonth;
+      $scope.totalTasksWorkedMonth = totalTasksWorkedMonth;
+      $scope.$apply();
     });
   };
 })
 .controller('technicianCtrl', function($scope, $routeParams, Page, $window) {
   Page.setTitle('Technician');
   $scope.taskStatusDict = taskStatusDict;
+  delete $scope.taskStatusDict[0];
   $scope.time = Date.now();
-  $scope.true = true;
+  $scope.statisticsTimespans = ['week','month'];
+  $scope.statisticsTimespan = 'week';
   
   // check if user is signed in
   firebase.auth().onAuthStateChanged(function(user) {
@@ -457,17 +641,18 @@ angular.module('dispatchApp', ['ngRoute'])
           $scope.pageLoaded = true;
           $scope.getTasks();
           $scope.getAllTechnicians();
+          $scope.getStatistics();
           $scope.$apply();
         } else {
           // no user data found
-          console.log('nope');
+          console.log('no user data found');
           firebase.auth().signOut();
           $window.location.href = '/';
         }
       });
     } else {
       // No user is signed in.
-      console.log('nope');
+      console.log('not signed in');
       $window.location.href = '/';
     }
   });
@@ -481,16 +666,15 @@ angular.module('dispatchApp', ['ngRoute'])
         // check filters
         if ($scope.taskFilter) {
           if ($scope.taskFilter.taskId) {
-            var key = parseInt($scope.taskFilter.taskId);
-            var task = $scope.tasks[$scope.taskFilter.taskId];
-            $scope.tasks = {};
-            if (task !== undefined) {
-              $scope.tasks[key] = task;
+            for (var key in $scope.tasks) {
+              if ($scope.tasks[key].taskId !== parseInt($scope.taskFilter.taskId)) {
+                delete $scope.tasks[key];
+              }
             }
           }
           if ($scope.taskFilter.status !== undefined) {
             for (var key in $scope.tasks) {
-              if ($scope.tasks[key].status !== $scope.taskFilter.status) {
+              if ($scope.tasks[key].status !== parseInt($scope.taskFilter.status)) {
                 delete $scope.tasks[key];
               }
             }
@@ -519,7 +703,7 @@ angular.module('dispatchApp', ['ngRoute'])
     });
   };
   
-  // get all technicians data, for assigning tasks
+  // get all technicians data, mainly name, for assigning tasks or displaying notes/sessions
   $scope.getAllTechnicians = function() {
     firebase.database().ref('/users').orderByChild('role').equalTo('technician').once('value').then(function(snapshot) {
       $scope.allTechnicians = snapshot.val();
@@ -634,5 +818,88 @@ angular.module('dispatchApp', ['ngRoute'])
     firebase.database().ref('/tasks/'+id+'/notes').push({author:$scope.user.name+' (ID '+$scope.user.userId+')',time:t,content:$scope.addNoteContent}, function() {
       $scope.fillTaskDetails($scope.taskDetails.taskId);
     });
-  }
+  };
+  
+  // statistics
+  $scope.getStatistics = function() {
+    var cutoffWeek = new Date();
+    cutoffWeek.setDate(cutoffWeek.getDate() - (cutoffWeek.getDay()-1)%7);
+    cutoffWeek.setHours(0,0,0,0);
+    var statisticsWeekLabel = cutoffWeek.toDateString().slice(0,10);
+    cutoffWeek = cutoffWeek.valueOf();
+    
+    var cutoffTwoWeeks = new Date();
+    cutoffTwoWeeks.setDate(cutoffTwoWeeks.getDate() - (cutoffTwoWeeks.getDay()-1)%7 - 7);
+    cutoffTwoWeeks.setHours(0,0,0,0);
+    var statisticsTwoWeeksLabel = cutoffTwoWeeks.toDateString().slice(0,10);
+    cutoffTwoWeeks = cutoffTwoWeeks.valueOf();
+    
+    var cutoffMonth = new Date();
+    cutoffMonth.setDate(1);
+    cutoffMonth.setHours(0,0,0,0);
+    var statisticsMonthLabel = cutoffMonth.toDateString().slice(0,10);
+    cutoffMonth = cutoffMonth.valueOf();
+    
+    firebase.database().ref('/tasks').orderByChild('techId').equalTo($scope.user.userId).once('value').then(function(snapshot) {
+      var hoursWorkedWeek = 0;
+      var sessionsWorkedWeek = 0;
+      var tasksWorkedWeek = 0;
+      var tasksWorkedWeekObj = {};
+      
+      var hoursWorkedTwoWeeks = 0;
+      var sessionsWorkedTwoWeeks = 0;
+      var tasksWorkedTwoWeeks = 0;
+      var tasksWorkedTwoWeeksObj = {};
+      
+      var hoursWorkedMonth = 0;
+      var sessionsWorkedMonth = 0;
+      var tasksWorkedMonth = 0;
+      var tasksWorkedMonthObj = {};
+      
+      snapshot.forEach(function(child) {
+        var sessions = child.val().sessions;
+        for (key in sessions) {
+          if (sessions[key].endTime > cutoffWeek) {
+            hoursWorkedWeek += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffWeek);
+            sessionsWorkedWeek++;
+            tasksWorkedWeekObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffTwoWeeks) {
+            hoursWorkedTwoWeeks += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffTwoWeeks);
+            sessionsWorkedTwoWeeks++;
+            tasksWorkedTwoWeeksObj[child.key] = true;
+          }
+          if (sessions[key].endTime > cutoffMonth) {
+            hoursWorkedMonth += sessions[key].endTime - Math.max(sessions[key].startTime,cutoffMonth);
+            sessionsWorkedMonth++;
+            tasksWorkedMonthObj[child.key] = true;
+          }
+        }
+      });
+      for (var key in tasksWorkedWeekObj) {
+        tasksWorkedWeek++;
+      }
+      for (var key in tasksWorkedTwoWeeksObj) {
+        tasksWorkedTwoWeeks++;
+      }
+      for (var key in tasksWorkedMonthObj) {
+        tasksWorkedMonth++;
+      }
+      $scope.statisticsWeekLabel = statisticsWeekLabel;
+      $scope.hoursWorkedWeek = hoursWorkedWeek;
+      $scope.sessionsWorkedWeek = sessionsWorkedWeek;
+      $scope.tasksWorkedWeek = tasksWorkedWeek;
+      
+      $scope.statisticsTwoWeeksLabel = statisticsTwoWeeksLabel;
+      $scope.hoursWorkedTwoWeeks = hoursWorkedTwoWeeks;
+      $scope.sessionsWorkedTwoWeeks = sessionsWorkedTwoWeeks;
+      $scope.tasksWorkedTwoWeeks = tasksWorkedTwoWeeks;
+      
+      $scope.statisticsMonthLabel = statisticsMonthLabel;
+      $scope.hoursWorkedMonth = hoursWorkedMonth;
+      $scope.sessionsWorkedMonth = sessionsWorkedMonth;
+      $scope.tasksWorkedMonth = tasksWorkedMonth;
+      $scope.$apply();
+    });
+  };
 });
