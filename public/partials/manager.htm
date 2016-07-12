@@ -6,14 +6,14 @@
   <h1>Manager View</h1>
   <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
   <section>
-    <h2 data-toggle="collapse" data-target="#task-section-collapse">
+    <h2 onclick="$('#task-section-collapse').collapse('toggle')">
       Tasks
       <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom"></div>
     </h2>
     <div class="collapse" id="task-section-collapse">
       <!-- create new task panel -->
       <div class="panel panel-success">
-        <div class="panel-heading" data-toggle="collapse" data-target="#create-new-task-collapse">
+        <div class="panel-heading" onclick="$('#create-new-task-collapse').collapse('toggle')">
           <strong>Create New Task <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom;font-size: 1.5em"></div></strong>
         </div>
         <div class="collapse" id="create-new-task-collapse">
@@ -115,7 +115,7 @@
     </div>
   </section>
   <section>
-    <h2 data-toggle="collapse" data-target="#technician-section-collapse">
+    <h2 onclick="$('#technician-section-collapse').collapse('toggle')">
       Technicians
       <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom"></div>
     </h2>
@@ -163,7 +163,7 @@
     </div>
   </section>
   <section>
-    <h2 data-toggle="collapse" data-target="#statistics-section-collapse">
+    <h2 onclick="$('#statistics-section-collapse').collapse('toggle')">
       Statistics
       <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom"></div>
     </h2>

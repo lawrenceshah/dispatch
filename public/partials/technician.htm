@@ -6,7 +6,7 @@
   <h1>Technician View</h1>
   <div>Logged in as <strong>{{user.name}} (ID {{user.userId}})</strong></div>
   <section>
-    <h2 data-toggle="collapse" data-target="#task-section-collapse">
+    <h2 onclick="$('#task-section-collapse').collapse('toggle')">
       Tasks
       <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom"></div>
     </h2>
@@ -69,7 +69,7 @@
     </div>
   </section>
   <section>
-    <h2 data-toggle="collapse" data-target="#statistics-section-collapse">
+    <h2 onclick="$('#statistics-section-collapse').collapse('toggle')">
       Statistics
       <div class="glyphicon glyphicon-chevron-down" style="vertical-align:bottom"></div>
     </h2>

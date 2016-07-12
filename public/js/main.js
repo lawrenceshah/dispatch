@@ -150,15 +150,10 @@ angular.module('dispatchApp', ['ngRoute'])
           $scope.user = snapshot.val();
           Page.setTitle('Manager | '+$scope.user.name);
           $scope.pageLoaded = true;
-          alert('getting tasks');
           $scope.getTasks();
-          alert('getting all technicians');
           $scope.getAllTechnicians();
-          alert('getting technicians');
           $scope.getTechnicians();
-          alert('getting total statistics');
           $scope.getTotalStatistics();
-          alert('done');
           $scope.$apply();
         } else {
           // no user data found
