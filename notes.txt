@@ -1,0 +1,6 @@
+to do list:
+- calendar view of tasks
+
+info:
+- "let" keyword not yet supported on mobile safari, stick to "var"
+- data-toggle="collapse" and data-target="#id" from bootstrap doesn't work on iphone, use jquery $('#id').collapse('toggle') instead

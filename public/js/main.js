@@ -22,15 +22,15 @@ angular.module('dispatchApp', ['ngRoute'])
 .config(function($routeProvider, $locationProvider) {
   $routeProvider
   .when('/', {
-    templateUrl: 'partials/main.htm',
+    templateUrl: 'partials/main.html',
     controller: 'mainCtrl',
   })
   .when('/manager/:userId', {
-    templateUrl: 'partials/manager.htm',
+    templateUrl: 'partials/manager.html',
     controller: 'managerCtrl',
   })
   .when('/technician/:userId', {
-    templateUrl: 'partials/technician.htm',
+    templateUrl: 'partials/technician.html',
     controller: 'technicianCtrl',
   })
   .otherwise({
